@@ -19,3 +19,9 @@ services:
         sync: false
       - key: GROK_API
         sync: false
+      - key: PADDLE_WEBHOOK_SECRET
+        sync: false
+      - key: PADDLE_STARTER_PRODUCT_ID
+        sync: false
+      - key: PADDLE_PRO_PRODUCT_ID
+        sync: false
