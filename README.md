@@ -226,7 +226,7 @@ Set these in the Render dashboard under **Environment**:
 
 - `DATABASE_URL` — your Supabase connection string
 - `JWT_SECRET` — run `openssl rand -hex 32` locally and paste the result
-- `GROQ_API_KEY` — from console.groq.com → API Keys (free, no credit card)
+- `GROK_API` — from console.groq.com → API Keys (free, no credit card)
 - `NODE_ENV` — `production`
 - `ALLOWED_ORIGINS` — your dashboard URL (e.g. `https://app.chatflow.io`)
 

@@ -8,7 +8,7 @@ const router = Router();
 
 // Groq uses the OpenAI-compatible API — same SDK, different base URL + key
 const groq = new OpenAI({
-  apiKey: process.env.GROQ_API_KEY ?? '',
+  apiKey: process.env.GROK_API ?? '',
   baseURL: 'https://api.groq.com/openai/v1',
 });
 

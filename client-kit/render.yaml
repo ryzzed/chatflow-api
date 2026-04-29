@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: chatflow-client-CLIENTNAME        # rename per project: chatflow-client-acme
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: GROK_API
+        sync: false                          # set manually in Render dashboard
+      - key: CLIENT_NAME
+        value: Acme Store                    # update per client
+      - key: WELCOME_MESSAGE
+        value: Hi! How can I help you today? # update per client
+      - key: ACCENT_COLOR
+        value: "#4F46E5"                     # update per client (hex color)
+      - key: NODE_ENV
+        value: production

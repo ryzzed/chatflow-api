@@ -101,7 +101,7 @@ router.post('/:botId/chat', chatLimiter, async (req: Request, res: Response): Pr
   });
 
   // ── Call Groq via OpenAI-compatible SDK ──────────────────────────────────────
-  const groqApiKey = process.env.GROQ_API_KEY;
+  const groqApiKey = process.env.GROK_API;
   if (!groqApiKey) {
     res.status(500).json({ error: 'LLM service not configured' });
     return;
@@ -244,6 +244,34 @@ router.delete('/:id', async (req: AuthRequest, res: Response): Promise<void> => 
 
   await prisma.bot.delete({ where: { id: existing.id } });
   res.status(204).send();
+});
+
+// GET /bots/:id/conversations — list recent conversations with message count
+router.get('/:id/conversations', async (req: AuthRequest, res: Response): Promise<void> => {
+  const bot = await prisma.bot.findFirst({
+    where: { id: req.params.id, userId: req.userId! },
+  });
+
+  if (!bot) {
+    res.status(404).json({ error: 'Bot not found' });
+    return;
+  }
+
+  const conversations = await prisma.conversation.findMany({
+    where: { botId: bot.id },
+    orderBy: { updatedAt: 'desc' },
+    take: 50,
+    include: {
+      messages: {
+        orderBy: { createdAt: 'asc' },
+        take: 1,
+        select: { content: true, role: true, createdAt: true },
+      },
+      _count: { select: { messages: true } },
+    },
+  });
+
+  res.json({ conversations });
 });
 
 export default router;
