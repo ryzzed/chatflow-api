@@ -2,10 +2,11 @@ import { prisma } from '../db';
 import { Plan } from '@prisma/client';
 
 // Monthly message caps per plan (user messages only — assistant responses don't count)
+// PRO is advertised as unlimited; use 10M as a functional ceiling.
 export const PLAN_CAPS: Record<Plan, number> = {
   FREE: 1000,
   STARTER: 5000,
-  PRO: 10000,
+  PRO: 10_000_000,
 };
 
 /**

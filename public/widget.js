@@ -73,7 +73,12 @@
     '.cf-msg{max-width:80%;padding:8px 12px;border-radius:12px;word-break:break-word;font-size:14px;}',
     '.cf-msg-bot{align-self:flex-start;background:#f1f5f9;color:#1e293b;border-bottom-left-radius:4px;}',
     '.cf-msg-user{align-self:flex-end;color:#fff;border-bottom-right-radius:4px;}',
-    '.cf-msg-typing{align-self:flex-start;background:#f1f5f9;color:#64748b;font-style:italic;border-bottom-left-radius:4px;}',
+    '.cf-msg-typing{align-self:flex-start;background:#f1f5f9;padding:10px 14px;border-bottom-left-radius:4px;display:flex;align-items:center;gap:4px;}',
+    '.cf-typing-dot{width:7px;height:7px;border-radius:50%;background:#94a3b8;animation:cf-bounce 1.2s infinite ease-in-out;}',
+    '.cf-typing-dot:nth-child(1){animation-delay:0s;}',
+    '.cf-typing-dot:nth-child(2){animation-delay:.2s;}',
+    '.cf-typing-dot:nth-child(3){animation-delay:.4s;}',
+    '@keyframes cf-bounce{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-5px);}}',
     '#cf-input-row{display:flex;align-items:center;gap:8px;padding:10px 12px;border-top:1px solid #e2e8f0;}',
     '#cf-input{flex:1;border:1px solid #e2e8f0;border-radius:20px;padding:8px 14px;font-size:14px;outline:none;resize:none;max-height:80px;font-family:inherit;}',
     '#cf-input:focus{border-color:#6366f1;}',
@@ -223,10 +228,10 @@
     history.push({ role: 'user', text: text });
     saveHistory(history);
 
-    // Typing indicator
+    // Typing indicator — animated dots
     var typingEl = document.createElement('div');
     typingEl.className = 'cf-msg cf-msg-typing';
-    typingEl.textContent = '…';
+    typingEl.innerHTML = '<span class="cf-typing-dot"></span><span class="cf-typing-dot"></span><span class="cf-typing-dot"></span>';
     messagesEl.appendChild(typingEl);
     messagesEl.scrollTop = messagesEl.scrollHeight;
 
@@ -235,7 +240,7 @@
     // Show a friendly message if the first response is slow (API cold start)
     var slowTimer = setTimeout(function () {
       if (typingEl.parentNode) {
-        typingEl.textContent = 'Still thinking… (waking up, hang on a moment)';
+        typingEl.innerHTML = '<span style="font-size:12px;color:#64748b;font-style:italic;">Still thinking… waking up, hang on a moment</span>';
       }
     }, 8000);
 

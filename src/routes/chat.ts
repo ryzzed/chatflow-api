@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import OpenAI from 'openai';
 import { prisma } from '../db';
-import { checkUsageCap } from '../utils/usage';
+import { checkUsageCap, getBotMonthlyUsage, PLAN_CAPS } from '../utils/usage';
 import { chatLimiter } from '../middleware/rateLimiter';
 
 // ---------------------------------------------------------------------------
@@ -88,10 +88,10 @@ router.post('/:botId/chat', chatLimiter, async (req: Request, res: Response): Pr
     return;
   }
 
-  // 1. Load bot (must be active)
+  // 1. Load bot (must be active) + owner plan for usagePct calculation
   const bot = await prisma.bot.findFirst({
     where: { id: botId, isActive: true },
-    select: { id: true, name: true, systemPrompt: true, allowedTopics: true },
+    select: { id: true, name: true, systemPrompt: true, allowedTopics: true, user: { select: { plan: true } } },
   });
 
   if (!bot) {
@@ -179,7 +179,11 @@ router.post('/:botId/chat', chatLimiter, async (req: Request, res: Response): Pr
     notifyFirstVisitor(botId, message.trim()).catch(() => {/* swallow */});
   }
 
-  res.json({ response: assistantContent, sessionId });
+  // 8. Compute usagePct and include in response when >= 80% so widget can show upgrade nudge
+  const monthlyAfter = await getBotMonthlyUsage(botId);
+  const cap = PLAN_CAPS[bot.user.plan];
+  const usagePct = Math.round((monthlyAfter / cap) * 100);
+  res.json({ response: assistantContent, sessionId, ...(usagePct >= 80 && { usagePct }) });
 });
 
 export default router;

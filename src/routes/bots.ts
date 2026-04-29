@@ -7,11 +7,13 @@ import type { Plan } from '@prisma/client';
 
 const router = Router();
 
-// Monthly message caps per plan (PRO = effectively unlimited at 1M)
+// NOTE: This inline cap is used only for this route's legacy chat handler (dead code —
+// chat requests are routed through chat.ts which uses utils/usage.ts PLAN_CAPS).
+// Kept in sync for clarity only. Authoritative values live in src/utils/usage.ts.
 const PLAN_CAPS: Record<Plan, number> = {
-  FREE: 100,
-  STARTER: 500,
-  PRO: 1_000_000,
+  FREE: 1000,
+  STARTER: 5000,
+  PRO: 10_000_000,
 };
 
 // Max bots per plan

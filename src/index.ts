@@ -134,7 +134,7 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 // Stored in-memory (keyed `userId-YYYY-MM`) — resets on deploy, which is fine.
 const usageWarningSent = new Set<string>();
 
-const PLAN_CAPS_WARN: Record<string, number> = { FREE: 80, STARTER: 400 }; // 80% thresholds
+const PLAN_CAPS_WARN: Record<string, number> = { FREE: 800, STARTER: 4000 }; // 80% of 1000/5000
 
 async function checkUsageLimits(): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
@@ -168,7 +168,7 @@ async function checkUsageLimits(): Promise<void> {
 
       if (msgCount < threshold) continue;
 
-      const cap = user.plan === 'FREE' ? 100 : 500;
+      const cap = user.plan === 'FREE' ? 1000 : 5000;
       const pct = Math.round((msgCount / cap) * 100);
       const nextPlan = user.plan === 'FREE' ? 'Starter ($39/mo)' : 'Pro ($79/mo)';
       const firstName = user.name?.split(' ')[0] ?? 'there';
