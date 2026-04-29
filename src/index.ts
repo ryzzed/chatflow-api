@@ -66,8 +66,15 @@ app.use(express.json({ limit: '1mb' }));
 app.use(apiLimiter);
 
 // Health check — used by Render to verify the service is up
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', version: '1.0.0' });
+// Runs a lightweight DB ping so deployment failures surface immediately
+app.get('/health', async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: 'ok', version: '1.0.0', db: 'connected' });
+  } catch (err) {
+    console.error('Health check DB ping failed:', err);
+    res.status(503).json({ status: 'error', version: '1.0.0', db: 'disconnected' });
+  }
 });
 
 // Routes
