@@ -1,0 +1,44 @@
+# KNOWLEDGE BASE — Replace this content with the client's actual FAQ and product information
+
+## About Us
+[BUSINESS NAME] is a [brief description of what the business does].
+Website: [client website]
+Contact email: [support email]
+Phone: [phone number]
+Hours: [business hours, e.g. Mon–Fri 9am–6pm EST]
+
+## Products / Services
+[List the main products or services the chatbot should know about]
+
+Example:
+- Product A: [description, price, key features]
+- Product B: [description, price, key features]
+- Service X: [what it includes, pricing, how to book]
+
+## Frequently Asked Questions
+
+Q: How do I place an order?
+A: [Answer]
+
+Q: What is your return/refund policy?
+A: [Answer]
+
+Q: How long does shipping take?
+A: [Answer]
+
+Q: Do you offer discounts or promo codes?
+A: [Answer]
+
+Q: How can I contact customer support?
+A: [Answer — include email, chat, or phone]
+
+Q: Do you ship internationally?
+A: [Answer]
+
+## Policies
+- Shipping: [details]
+- Returns: [details]
+- Privacy: [brief note or link]
+
+## Additional Notes
+[Add any other information the chatbot should know — common issues, special instructions, seasonal notes, etc.]
