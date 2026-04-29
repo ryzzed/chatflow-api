@@ -147,6 +147,25 @@
     return div;
   }
 
+  function addLimitCTA() {
+    var div = document.createElement('div');
+    div.className = 'cf-msg cf-msg-bot';
+    div.innerHTML = '<strong style="display:block;margin-bottom:4px">Monthly message limit reached</strong>'
+      + '<span style="font-size:12px;opacity:0.75">This bot has used its quota for this month. '
+      + 'The site owner can upgrade at <a href="https://myflow.chat" target="_blank" rel="noopener" '
+      + 'style="color:' + botConfig.accentColor + ';font-weight:600">myflow.chat</a>.</span>'
+      + '<br><a href="https://myflow.chat" target="_blank" rel="noopener" '
+      + 'style="display:inline-flex;align-items:center;gap:5px;margin-top:10px;background:'
+      + botConfig.accentColor + ';color:#fff;text-decoration:none;padding:7px 14px;'
+      + 'border-radius:6px;font-size:12px;font-weight:600;">Upgrade to continue →</a>';
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    inputEl.disabled = true;
+    inputEl.placeholder = 'Upgrade required…';
+    sendBtn.disabled = true;
+    sendBtn.style.opacity = '0.35';
+  }
+
   function renderHistory() {
     messagesEl.innerHTML = '';
     if (history.length === 0 && botConfig.welcomeMessage) {
@@ -227,12 +246,7 @@
           addMessage('bot', 'Sorry, something went wrong. Please try again.');
         }
       } else if (xhr.status === 429) {
-        try {
-          var errData = JSON.parse(xhr.responseText);
-          addMessage('bot', errData.error || 'Message limit reached. Please try again later.');
-        } catch (e) {
-          addMessage('bot', 'Message limit reached. Please try again later.');
-        }
+        addLimitCTA();
       } else {
         addMessage('bot', 'Sorry, something went wrong. Please try again.');
       }
@@ -274,9 +288,14 @@
             name: data.bot.name || botConfig.name,
             welcomeMessage: data.bot.welcomeMessage || botConfig.welcomeMessage,
             accentColor: data.bot.accentColor || botConfig.accentColor,
+            hideBranding: !!data.bot.hideBranding,
           };
           botNameEl.textContent = botConfig.name;
           applyColor(botConfig.accentColor);
+          if (botConfig.hideBranding) {
+            var poweredEl = document.getElementById('cf-powered');
+            if (poweredEl) { poweredEl.style.display = 'none'; }
+          }
         }
       } catch (e) { /* use defaults */ }
     }

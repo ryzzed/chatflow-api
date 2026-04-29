@@ -30,7 +30,13 @@ const MAX_HISTORY_MESSAGES = 20;
 router.get('/:id/public-config', async (req: Request, res: Response): Promise<void> => {
   const bot = await prisma.bot.findFirst({
     where: { id: req.params.id, isActive: true },
-    select: { id: true, name: true, welcomeMessage: true, accentColor: true },
+    select: {
+      id: true,
+      name: true,
+      welcomeMessage: true,
+      accentColor: true,
+      user: { select: { plan: true } },
+    },
   });
 
   if (!bot) {
@@ -38,7 +44,8 @@ router.get('/:id/public-config', async (req: Request, res: Response): Promise<vo
     return;
   }
 
-  res.json({ bot });
+  const { user, ...botFields } = bot;
+  res.json({ bot: { ...botFields, hideBranding: user.plan !== 'FREE' } });
 });
 
 // POST /bots/:botId/chat — called by embed widget end-users
