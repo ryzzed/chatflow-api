@@ -78,11 +78,19 @@ router.post('/login', authLimiter, async (req: Request, res: Response): Promise<
   res.json({ user: safeUser, token });
 });
 
-// GET /auth/me — returns the authenticated user's profile + plan + monthly usage
+// GET /auth/me — returns the authenticated user's profile + plan + billing status + monthly usage
 router.get('/me', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
   const user = await prisma.user.findUnique({
     where: { id: req.userId! },
-    select: { id: true, email: true, name: true, plan: true, createdAt: true },
+    select: {
+      id:                        true,
+      email:                     true,
+      name:                      true,
+      plan:                      true,
+      paddleSubscriptionStatus:  true,
+      paddleNextBillDate:        true,
+      createdAt:                 true,
+    },
   });
 
   if (!user) {
