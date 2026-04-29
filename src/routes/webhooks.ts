@@ -24,12 +24,18 @@ function verifyPaddleSignature(rawBody: string, signatureHeader: string, secret:
   return crypto.timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(h1, 'hex'));
 }
 
-function planFromPaddleProductId(productId: string | undefined): Plan | null {
+// Resolve plan from price ID first (supports single-product / multi-price Paddle setup),
+// falling back to product ID for backwards compatibility.
+function planFromPaddle(priceId: string | undefined, productId: string | undefined): Plan | null {
+  const starterPriceId = process.env.PADDLE_STARTER_PRICE_ID ?? '';
+  const proPriceId = process.env.PADDLE_PRO_PRICE_ID ?? '';
   const starterProductId = process.env.PADDLE_STARTER_PRODUCT_ID ?? '';
   const proProductId = process.env.PADDLE_PRO_PRODUCT_ID ?? '';
 
-  if (productId === proProductId) return 'PRO';
-  if (productId === starterProductId) return 'STARTER';
+  if (priceId && proPriceId && priceId === proPriceId) return 'PRO';
+  if (priceId && starterPriceId && priceId === starterPriceId) return 'STARTER';
+  if (productId && proProductId && productId === proProductId) return 'PRO';
+  if (productId && starterProductId && productId === starterProductId) return 'STARTER';
   return null;
 }
 
@@ -63,7 +69,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     data?: {
       customer_id?: string;
       id?: string; // subscription id
-      items?: Array<{ price?: { product_id?: string } }>;
+      items?: Array<{ price?: { id?: string; product_id?: string } }>;
       customer?: { email?: string };
     };
   };
@@ -79,9 +85,10 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       case 'subscription.updated': {
         const customerId = data?.customer_id;
         const subscriptionId = data?.id;
+        const priceId = data?.items?.[0]?.price?.id;
         const productId = data?.items?.[0]?.price?.product_id;
         const customerEmail = data?.customer?.email;
-        const plan = planFromPaddleProductId(productId);
+        const plan = planFromPaddle(priceId, productId);
 
         if (!customerId) {
           console.warn('Paddle webhook: missing customer_id');
