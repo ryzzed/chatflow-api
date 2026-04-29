@@ -29,10 +29,21 @@ app.get('/demo', (_req, res) => {
   res.sendFile(path.join(publicDir, 'demo.html'));
 });
 
+// === Public embed endpoint: wildcard CORS so any site can call the chat API ===
+// MUST be registered BEFORE global CORS — cors() always calls res.end() on OPTIONS
+// preflights, so if global cors runs first on /bots paths it will terminate the
+// request without setting Access-Control-Allow-Origin for unknown (customer) origins.
+app.use(
+  '/bots',
+  cors({ origin: '*' }),              // allow any site that embeds the widget
+  express.json({ limit: '1mb' }),     // parse body before chatRouter handles it
+  chatRouter                          // POST /bots/:botId/chat (public)
+);
+
 // Security headers
 app.use(helmet());
 
-// CORS
+// CORS — dashboard/admin endpoints only
 const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '')
   .split(',')
   .map((o) => o.trim())
@@ -80,7 +91,6 @@ app.get('/health', async (_req, res) => {
 // Routes
 app.use('/auth', authRouter);
 app.use('/bots', botsRouter);
-app.use('/bots', chatRouter); // POST /bots/:botId/chat (public)
 app.use('/webhooks', webhooksRouter);
 
 // 404 fallback
