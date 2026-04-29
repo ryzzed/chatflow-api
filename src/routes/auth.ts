@@ -78,7 +78,7 @@ router.post('/login', authLimiter, async (req: Request, res: Response): Promise<
   res.json({ user: safeUser, token });
 });
 
-// GET /auth/me — returns the authenticated user's profile + plan
+// GET /auth/me — returns the authenticated user's profile + plan + monthly usage
 router.get('/me', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
   const user = await prisma.user.findUnique({
     where: { id: req.userId! },
@@ -90,7 +90,20 @@ router.get('/me', requireAuth, async (req: AuthRequest, res: Response): Promise<
     return;
   }
 
-  res.json({ user });
+  // Monthly message count across all user's bots (for usage meter in dashboard)
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const monthlyMessageCount = await prisma.message.count({
+    where: {
+      role: 'user',
+      conversation: { bot: { userId: req.userId! } },
+      createdAt: { gte: startOfMonth },
+    },
+  });
+
+  res.json({ user, monthlyMessageCount });
 });
 
 export default router;
