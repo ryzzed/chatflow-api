@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
-import rateLimit from 'express-rate-limit';
 import OpenAI from 'openai';
 import { prisma } from '../db';
 import { checkUsageCap } from '../utils/usage';
+import { chatLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
@@ -13,16 +13,6 @@ const groq = new OpenAI({
 });
 
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
-
-// Chat rate limiter: 20 req/min per IP per botId
-const chatLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 20,
-  keyGenerator: (req) => `${req.ip}:${req.params.botId}`,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many messages, please slow down.' },
-});
 
 // POST /bots/:botId/chat  — public, no auth (called by embed widget)
 router.post('/:botId/chat', chatLimiter, async (req: Request, res: Response): Promise<void> => {

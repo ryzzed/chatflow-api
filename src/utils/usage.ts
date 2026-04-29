@@ -3,9 +3,9 @@ import { Plan } from '@prisma/client';
 
 // Monthly message caps per plan (user messages only — assistant responses don't count)
 export const PLAN_CAPS: Record<Plan, number> = {
-  FREE: 50,
-  STARTER: 500,
-  PRO: 2000,
+  FREE: 1000,
+  STARTER: 5000,
+  PRO: 10000,
 };
 
 /**
