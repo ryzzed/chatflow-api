@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: chatflow-api
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run prisma:generate && npm run build && npm run prisma:migrate
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ALLOWED_ORIGINS
+        sync: false

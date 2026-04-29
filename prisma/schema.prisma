@@ -1,0 +1,79 @@
+// ChatFlow Prisma schema
+// Database: Supabase PostgreSQL (free tier)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  plan      Plan     @default(FREE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bots Bot[]
+
+  @@map("users")
+}
+
+model Bot {
+  id             String   @id @default(cuid())
+  name           String
+  welcomeMessage String   @default("Hi! How can I help you?")
+  systemPrompt   String   @default("You are a helpful assistant.")
+  accentColor    String   @default("#6366f1")
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+
+  @@map("bots")
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  sessionId String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  botId    String
+  bot      Bot       @relation(fields: [botId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@map("conversations")
+}
+
+model Message {
+  id        String      @id @default(cuid())
+  role      MessageRole
+  content   String
+  createdAt DateTime    @default(now())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+enum Plan {
+  FREE
+  STARTER
+  PRO
+}
+
+enum MessageRole {
+  user
+  assistant
+  system
+}
