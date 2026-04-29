@@ -7,11 +7,18 @@ import type { Plan } from '@prisma/client';
 
 const router = Router();
 
-// Monthly message caps per plan
+// Monthly message caps per plan (PRO = effectively unlimited at 1M)
 const PLAN_CAPS: Record<Plan, number> = {
   FREE: 100,
   STARTER: 500,
-  PRO: 2000,
+  PRO: 1_000_000,
+};
+
+// Max bots per plan
+const BOT_LIMITS: Record<Plan, number> = {
+  FREE: 1,
+  STARTER: 1,
+  PRO: 5,
 };
 
 // Max conversation history turns sent to the model (keeps TPM low on Groq free tier)
@@ -159,6 +166,17 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
 
   if (!name || name.trim().length === 0) {
     res.status(400).json({ error: 'name is required' });
+    return;
+  }
+
+  // Enforce per-plan bot count limit
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { plan: true } });
+  const botLimit = BOT_LIMITS[(user?.plan ?? 'FREE') as Plan];
+  const botCount = await prisma.bot.count({ where: { userId } });
+  if (botCount >= botLimit) {
+    res.status(403).json({
+      error: `Your ${user?.plan ?? 'FREE'} plan allows up to ${botLimit} bot${botLimit === 1 ? '' : 's'}. Upgrade to Pro to create more.`,
+    });
     return;
   }
 
