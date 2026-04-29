@@ -80,6 +80,9 @@
     '#cf-send{border:none;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
     '#cf-send:disabled{opacity:.5;cursor:default;}',
     '#cf-send svg{width:16px;height:16px;fill:#fff;}',
+    '#cf-powered{text-align:center;padding:6px 12px;font-size:11px;color:#94a3b8;border-top:1px solid #f1f5f9;}',
+    '#cf-powered a{color:#6366f1;text-decoration:none;font-weight:500;}',
+    '#cf-powered a:hover{text-decoration:underline;}',
     '@media(max-width:440px){#cf-widget-panel{right:8px;left:8px;width:auto;bottom:88px;}}',
   ].join('');
   document.head.appendChild(styleEl);
@@ -108,6 +111,7 @@
         '<svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>',
       '</button>',
     '</div>',
+    '<div id="cf-powered">Powered by <a href="https://myflow.chat" target="_blank" rel="noopener">ChatFlow</a></div>',
   ].join('');
 
   document.body.appendChild(btn);
