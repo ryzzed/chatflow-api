@@ -280,10 +280,22 @@
   var currentBotId = null;
   var widgetScriptEl = null;
 
+  // Auto-load bot ID from URL path: /demo/:botId
+  var pathParts = window.location.pathname.split('/').filter(Boolean);
+  var urlBotId = pathParts.length >= 2 ? pathParts[1] : null;
+  if (urlBotId) {
+    document.getElementById('bot-id-field').value = urlBotId;
+    // Auto-load after a short tick so the DOM is ready
+    setTimeout(function() { loadWidget(urlBotId); }, 100);
+  }
+
   document.getElementById('load-btn').addEventListener('click', function () {
     var val = document.getElementById('bot-id-field').value.trim();
     if (!val) { alert('Please enter a Bot ID'); return; }
+    loadWidget(val);
+  });
 
+  function loadWidget(val) {
     // Update the snippet display
     document.getElementById('snippet-bot-id').textContent = '"' + val + '"';
 
@@ -302,7 +314,7 @@
     widgetScriptEl.src = '/widget.js';
     widgetScriptEl.setAttribute('data-bot-id', val);
     document.body.appendChild(widgetScriptEl);
-  });
+  }
 
   function copySnippet() {
     var botId = document.getElementById('bot-id-field').value.trim() || 'YOUR_BOT_ID';

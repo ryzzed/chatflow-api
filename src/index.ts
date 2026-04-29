@@ -24,8 +24,8 @@ app.get('/widget.js', (_req, res) => {
   res.sendFile(path.join(publicDir, 'widget.js'));
 });
 
-// GET /demo — widget demo page
-app.get('/demo', (_req, res) => {
+// GET /demo and GET /demo/:botId — widget demo page (bot ID passed as URL param)
+app.get('/demo/:botId?', (req, res) => {
   res.sendFile(path.join(publicDir, 'demo.html'));
 });
 
@@ -92,6 +92,31 @@ app.get('/health', async (_req, res) => {
 app.use('/auth', authRouter);
 app.use('/bots', botsRouter);
 app.use('/webhooks', webhooksRouter);
+
+// Internal admin route — upgrade user plan by email (protected by ADMIN_SECRET)
+app.post('/admin/set-plan', express.json(), async (req, res) => {
+  const secret = process.env.ADMIN_SECRET;
+  if (!secret || req.headers['x-admin-secret'] !== secret) {
+    res.status(403).json({ error: 'Forbidden' });
+    return;
+  }
+  const { email, plan } = req.body as { email?: string; plan?: string };
+  const validPlans = ['FREE', 'STARTER', 'PRO'];
+  if (!email || !plan || !validPlans.includes(plan)) {
+    res.status(400).json({ error: 'email and plan (FREE|STARTER|PRO) required' });
+    return;
+  }
+  try {
+    const user = await prisma.user.update({
+      where: { email },
+      data: { plan: plan as 'FREE' | 'STARTER' | 'PRO' },
+      select: { id: true, email: true, plan: true },
+    });
+    res.json({ ok: true, user });
+  } catch {
+    res.status(404).json({ error: 'User not found' });
+  }
+});
 
 // 404 fallback
 app.use((_req, res) => {
