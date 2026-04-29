@@ -160,6 +160,50 @@ router.post('/:botId/chat', chatLimiter, async (req: Request, res: Response): Pr
 
 router.use(requireAuth);
 
+// POST /bots/preview-chat — authenticated; ephemeral chat for wizard live preview (no DB persistence)
+router.post('/preview-chat', async (req: AuthRequest, res: Response): Promise<void> => {
+  const { message, config } = req.body as {
+    message?: string;
+    config?: { name?: string; systemPrompt?: string; allowedTopics?: string };
+  };
+
+  if (!message || message.trim().length === 0) {
+    res.status(400).json({ error: 'message is required' });
+    return;
+  }
+
+  const groqApiKey = process.env.GROK_API;
+  if (!groqApiKey) {
+    res.status(500).json({ error: 'LLM service not configured' });
+    return;
+  }
+
+  const botName = config?.name?.trim() || 'Assistant';
+  const effectiveSystemPrompt = config?.allowedTopics?.trim()
+    ? `You are a customer service assistant for ${botName}. Only answer questions related to: ${config.allowedTopics.trim()}. If asked anything else, politely decline and redirect to your purpose.`
+    : (config?.systemPrompt?.trim() || 'You are a helpful assistant.');
+
+  const client = new OpenAI({
+    baseURL: 'https://api.groq.com/openai/v1',
+    apiKey: groqApiKey,
+  });
+
+  try {
+    const completion = await client.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: effectiveSystemPrompt },
+        { role: 'user', content: message.trim() },
+      ],
+    });
+    const response = completion.choices[0]?.message?.content ?? '';
+    res.json({ response });
+  } catch (err) {
+    console.error('Groq preview error:', err);
+    res.status(502).json({ error: 'AI service unavailable, please try again' });
+  }
+});
+
 // GET /bots/stats — dashboard metrics (total conversations, messages this month, active bots)
 router.get('/stats', async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.userId!;
@@ -222,12 +266,27 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
   res.status(201).json({ bot });
 });
 
-// GET /bots — list caller's bots
+// GET /bots — list caller's bots (with conversation count and last active)
 router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
-  const bots = await prisma.bot.findMany({
+  const rawBots = await prisma.bot.findMany({
     where: { userId: req.userId! },
     orderBy: { createdAt: 'desc' },
+    include: {
+      _count: { select: { conversations: true } },
+      conversations: {
+        orderBy: { updatedAt: 'desc' },
+        take: 1,
+        select: { updatedAt: true },
+      },
+    },
   });
+
+  const bots = rawBots.map(({ conversations, _count, ...bot }) => ({
+    ...bot,
+    conversationCount: _count.conversations,
+    lastActiveAt: conversations[0]?.updatedAt ?? null,
+  }));
+
   res.json({ bots });
 });
 
