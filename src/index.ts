@@ -130,13 +130,20 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 });
 
 async function main() {
-  // Verify DB connection
-  await prisma.$connect();
-  console.log('Database connected');
-
+  // Start listening first so the Render health check can succeed quickly,
+  // then verify the DB connection in the background.
   app.listen(port, '0.0.0.0', () => {
     console.log(`ChatFlow API listening on port ${port}`);
   });
+
+  try {
+    await prisma.$connect();
+    console.log('Database connected');
+  } catch (err) {
+    // Log but don't crash — the /health endpoint will surface the DB status.
+    // Render will retry health checks and the service stays up for non-DB routes.
+    console.error('Database connection failed on startup:', err);
+  }
 }
 
 main().catch((err) => {
