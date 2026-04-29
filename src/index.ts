@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import { apiLimiter } from './middleware/rateLimiter';
 import authRouter from './routes/auth';
 import botsRouter from './routes/bots';
+import chatRouter from './routes/chat';
 import { prisma } from './db';
 
 const app = express();
@@ -40,6 +41,7 @@ app.get('/health', (_req, res) => {
 // Routes
 app.use('/auth', authRouter);
 app.use('/bots', botsRouter);
+app.use('/bots', chatRouter); // POST /bots/:botId/chat (public)
 
 // 404 fallback
 app.use((_req, res) => {

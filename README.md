@@ -143,26 +143,62 @@ GET /bots/:id/public-config
 
 ---
 
-## curl Quick Test
+## End-to-End curl Test (register → bot → chat)
 
 ```bash
 BASE=http://localhost:3000
 
-# Register
+# 1. Register an account
 TOKEN=$(curl -s -X POST $BASE/auth/register \
   -H 'Content-Type: application/json' \
   -d '{"email":"test@example.com","password":"password123","name":"Test"}' \
   | jq -r .token)
 
-# Create bot
-curl -s -X POST $BASE/bots \
+echo "Got token: ${TOKEN:0:20}..."
+
+# 2. Create a bot
+BOT_ID=$(curl -s -X POST $BASE/bots \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
-  -d '{"name":"My Bot","welcomeMessage":"Hello!","systemPrompt":"You are a helpful assistant."}' | jq .
+  -d '{"name":"Support Bot","welcomeMessage":"Hi! How can I help?","systemPrompt":"You are a helpful customer support agent. Be concise."}' \
+  | jq -r .bot.id)
 
-# List bots
-curl -s $BASE/bots -H "Authorization: Bearer $TOKEN" | jq .
+echo "Created bot: $BOT_ID"
+
+# 3. Send a chat message (no auth required — simulates embed widget)
+curl -s -X POST $BASE/bots/$BOT_ID/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"message":"What can you help me with?","sessionId":"test-session-001"}' | jq .
+
+# Expected response:
+# {
+#   "response": "I can help you with...",
+#   "sessionId": "test-session-001"
+# }
+
+# 4. Continue the conversation (context preserved)
+curl -s -X POST $BASE/bots/$BOT_ID/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"message":"Tell me more about that.","sessionId":"test-session-001"}' | jq .
+
+# 5. Get public bot config (for embed widget)
+curl -s $BASE/bots/$BOT_ID/public-config | jq .
 ```
+
+### Chat endpoint
+
+```
+POST /bots/:botId/chat
+Content-Type: application/json
+
+{ "message": "Hello!", "sessionId": "unique-session-id" }
+
+→ 200 { "response": "Hi! How can I help you?", "sessionId": "unique-session-id" }
+→ 429 { "error": "This bot has reached its starter plan limit of 500 messages/month...", "cap": 500, "used": 500 }
+→ 502 { "error": "AI service temporarily unavailable. Please try again." }
+```
+
+The `sessionId` is a client-generated UUID that ties messages into a conversation thread. Conversation history (last 20 messages) is automatically included for context.
 
 ---
 
@@ -190,6 +226,7 @@ Set these in the Render dashboard under **Environment**:
 
 - `DATABASE_URL` — your Supabase connection string
 - `JWT_SECRET` — run `openssl rand -hex 32` locally and paste the result
+- `GROQ_API_KEY` — from console.groq.com → API Keys (free, no credit card)
 - `NODE_ENV` — `production`
 - `ALLOWED_ORIGINS` — your dashboard URL (e.g. `https://app.chatflow.io`)
 
@@ -209,9 +246,12 @@ chatflow-api/
 │   ├── middleware/
 │   │   ├── auth.ts         # JWT requireAuth guard
 │   │   └── rateLimiter.ts  # express-rate-limit configs
+│   ├── utils/
+│   │   └── usage.ts        # Monthly message cap enforcement
 │   └── routes/
 │       ├── auth.ts         # POST /auth/register, POST /auth/login
-│       └── bots.ts         # CRUD /bots + public-config
+│       ├── bots.ts         # CRUD /bots + public-config
+│       └── chat.ts         # POST /bots/:id/chat (Groq, public)
 ├── .env.example
 ├── package.json
 ├── tsconfig.json
