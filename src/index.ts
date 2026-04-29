@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import path from 'path';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -11,6 +12,22 @@ import { prisma } from './db';
 
 const app = express();
 const port = parseInt(process.env.PORT ?? '3000', 10);
+
+// Static public files (widget.js, demo.html) — served before Helmet CSP kicks in
+const publicDir = path.join(__dirname, '..', 'public');
+
+// GET /widget.js — serve embed script with permissive CORS so any site can load it
+app.get('/widget.js', (_req, res) => {
+  res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cache-Control', 'public, max-age=300'); // 5-min cache
+  res.sendFile(path.join(publicDir, 'widget.js'));
+});
+
+// GET /demo — widget demo page
+app.get('/demo', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'demo.html'));
+});
 
 // Security headers
 app.use(helmet());
