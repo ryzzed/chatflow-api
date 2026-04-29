@@ -12,19 +12,35 @@ datasource db {
 }
 
 model User {
-  id                    String   @id @default(cuid())
-  email                 String   @unique
-  password              String
-  name                  String?
-  plan                  Plan     @default(FREE)
-  paddleCustomerId      String?
-  paddleSubscriptionId  String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                          String    @id @default(cuid())
+  email                       String    @unique
+  password                    String
+  name                        String?
+  plan                        Plan      @default(FREE)
+  paddleCustomerId            String?
+  paddleSubscriptionId        String?
+  // "active" | "past_due" | "paused" | "cancelled" | "trialing"
+  paddleSubscriptionStatus    String?
+  paddleNextBillDate          DateTime?
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
 
-  bots Bot[]
+  bots            Bot[]
+  webhookEvents   PaddleWebhookEvent[]
 
   @@map("users")
+}
+
+// Idempotency table — one row per processed Paddle event ID
+model PaddleWebhookEvent {
+  id          String   @id              // Paddle event_id (e.g. "evt_01h...")
+  eventType   String
+  processedAt DateTime @default(now())
+  userId      String?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("paddle_webhook_events")
 }
 
 model Bot {
@@ -32,6 +48,7 @@ model Bot {
   name           String
   welcomeMessage String   @default("Hi! How can I help you?")
   systemPrompt   String   @default("You are a helpful assistant.")
+  allowedTopics  String   @default("")
   accentColor    String   @default("#6366f1")
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())

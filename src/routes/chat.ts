@@ -34,7 +34,7 @@ router.post('/:botId/chat', chatLimiter, async (req: Request, res: Response): Pr
   // 1. Load bot (must be active)
   const bot = await prisma.bot.findFirst({
     where: { id: botId, isActive: true },
-    select: { id: true, name: true, systemPrompt: true },
+    select: { id: true, name: true, systemPrompt: true, allowedTopics: true },
   });
 
   if (!bot) {
@@ -81,8 +81,13 @@ router.post('/:botId/chat', chatLimiter, async (req: Request, res: Response): Pr
     content: m.content,
   }));
 
+  // Build effective system prompt — inject guardrail when allowedTopics is configured
+  const effectiveSystemPrompt = bot.allowedTopics.trim()
+    ? `You are a customer service assistant for ${bot.name}. Only answer questions related to: ${bot.allowedTopics.trim()}. If asked anything else, politely decline and redirect to your purpose.`
+    : bot.systemPrompt;
+
   const groqMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: 'system', content: bot.systemPrompt },
+    { role: 'system', content: effectiveSystemPrompt },
     ...historyMessages,
     { role: 'user', content: message.trim() },
   ];

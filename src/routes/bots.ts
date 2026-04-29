@@ -59,6 +59,7 @@ router.post('/:botId/chat', chatLimiter, async (req: Request, res: Response): Pr
   const bot = await prisma.bot.findFirst({
     where: { id: botId, isActive: true },
     include: { user: { select: { plan: true } } },
+    // allowedTopics is included via the full model (no explicit select)
   });
 
   if (!bot) {
@@ -119,12 +120,17 @@ router.post('/:botId/chat', chatLimiter, async (req: Request, res: Response): Pr
     apiKey: groqApiKey,
   });
 
+  // Inject guardrail when allowedTopics is configured
+  const effectiveSystemPrompt = bot.allowedTopics?.trim()
+    ? `You are a customer service assistant for ${bot.name}. Only answer questions related to: ${bot.allowedTopics.trim()}. If asked anything else, politely decline and redirect to your purpose.`
+    : bot.systemPrompt;
+
   let assistantContent: string;
   try {
     const completion = await client.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       messages: [
-        { role: 'system', content: bot.systemPrompt },
+        { role: 'system', content: effectiveSystemPrompt },
         ...history.map((m) => ({
           role: m.role as 'user' | 'assistant',
           content: m.content,
@@ -154,13 +160,35 @@ router.post('/:botId/chat', chatLimiter, async (req: Request, res: Response): Pr
 
 router.use(requireAuth);
 
+// GET /bots/stats — dashboard metrics (total conversations, messages this month, active bots)
+router.get('/stats', async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.userId!;
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const [totalConversations, messagesThisMonth, activeBots] = await Promise.all([
+    prisma.conversation.count({ where: { bot: { userId } } }),
+    prisma.message.count({
+      where: {
+        role: 'user',
+        conversation: { bot: { userId } },
+        createdAt: { gte: startOfMonth },
+      },
+    }),
+    prisma.bot.count({ where: { userId, isActive: true } }),
+  ]);
+
+  res.json({ totalConversations, messagesThisMonth, activeBots });
+});
+
 // POST /bots — create a bot
 router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.userId!;
-  const { name, welcomeMessage, systemPrompt, accentColor } = req.body as {
+  const { name, welcomeMessage, systemPrompt, allowedTopics, accentColor } = req.body as {
     name?: string;
     welcomeMessage?: string;
     systemPrompt?: string;
+    allowedTopics?: string;
     accentColor?: string;
   };
 
@@ -185,6 +213,7 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
       name: name.trim(),
       welcomeMessage: welcomeMessage?.trim(),
       systemPrompt: systemPrompt?.trim(),
+      allowedTopics: allowedTopics?.trim() ?? '',
       accentColor: accentColor?.trim(),
       userId,
     },
@@ -227,10 +256,11 @@ router.patch('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
     return;
   }
 
-  const { name, welcomeMessage, systemPrompt, accentColor, isActive } = req.body as {
+  const { name, welcomeMessage, systemPrompt, allowedTopics, accentColor, isActive } = req.body as {
     name?: string;
     welcomeMessage?: string;
     systemPrompt?: string;
+    allowedTopics?: string;
     accentColor?: string;
     isActive?: boolean;
   };
@@ -241,6 +271,7 @@ router.patch('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
       ...(name !== undefined && { name: name.trim() }),
       ...(welcomeMessage !== undefined && { welcomeMessage: welcomeMessage.trim() }),
       ...(systemPrompt !== undefined && { systemPrompt: systemPrompt.trim() }),
+      ...(allowedTopics !== undefined && { allowedTopics: allowedTopics.trim() }),
       ...(accentColor !== undefined && { accentColor: accentColor.trim() }),
       ...(isActive !== undefined && { isActive }),
     },
