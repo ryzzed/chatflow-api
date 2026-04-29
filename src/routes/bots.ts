@@ -160,7 +160,9 @@ router.post('/:botId/chat', chatLimiter, async (req: Request, res: Response): Pr
     ],
   });
 
-  res.json({ response: assistantContent, sessionId: sessionId.trim() });
+  // Include usagePct when >= 80% so the widget can show a soft upgrade nudge
+  const usagePct = Math.round((monthlyCount + 1) / cap * 100);
+  res.json({ response: assistantContent, sessionId: sessionId.trim(), ...(usagePct >= 80 && { usagePct }) });
 });
 
 // ─── PROTECTED ROUTES (require JWT) ──────────────────────────────────────────

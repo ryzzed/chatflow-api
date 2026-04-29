@@ -147,6 +147,19 @@
     return div;
   }
 
+  var nudgeShown = false;
+  function addUsageNudge(pct) {
+    if (nudgeShown) return; // show once per session
+    nudgeShown = true;
+    var bar = document.createElement('div');
+    bar.style.cssText = 'margin:6px 0 2px;padding:8px 12px;background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.2);border-radius:8px;font-size:11px;color:#ca8a04;display:flex;align-items:center;justify-content:space-between;gap:8px;';
+    bar.innerHTML = '<span>⚡ ' + pct + '% of this month\'s quota used</span>'
+      + '<a href="https://myflow.chat" target="_blank" rel="noopener" '
+      + 'style="color:' + botConfig.accentColor + ';font-weight:600;white-space:nowrap;font-size:11px;text-decoration:none;">Upgrade →</a>';
+    messagesEl.appendChild(bar);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
   function addLimitCTA() {
     var div = document.createElement('div');
     div.className = 'cf-msg cf-msg-bot';
@@ -242,6 +255,8 @@
           addMessage('bot', reply);
           history.push({ role: 'bot', text: reply });
           saveHistory(history);
+          // Soft upgrade nudge when approaching the monthly limit
+          if (data.usagePct >= 80) { addUsageNudge(data.usagePct); }
         } catch (e) {
           addMessage('bot', 'Sorry, something went wrong. Please try again.');
         }
