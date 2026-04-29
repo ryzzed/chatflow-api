@@ -11,13 +11,15 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String?
-  plan      Plan     @default(FREE)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  email                 String   @unique
+  password              String
+  name                  String?
+  plan                  Plan     @default(FREE)
+  paddleCustomerId      String?
+  paddleSubscriptionId  String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   bots Bot[]
 

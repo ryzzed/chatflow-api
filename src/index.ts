@@ -6,6 +6,7 @@ import { apiLimiter } from './middleware/rateLimiter';
 import authRouter from './routes/auth';
 import botsRouter from './routes/bots';
 import chatRouter from './routes/chat';
+import webhooksRouter from './routes/webhooks';
 import { prisma } from './db';
 
 const app = express();
@@ -27,6 +28,20 @@ app.use(
   })
 );
 
+// Paddle webhook — raw body needed for HMAC signature verification
+// Must be registered BEFORE express.json() middleware
+app.use(
+  '/webhooks/paddle',
+  express.raw({ type: 'application/json' }),
+  (req, _res, next) => {
+    // Attach raw body as string for signature verification
+    (req as typeof req & { rawBody: string }).rawBody = req.body.toString('utf8');
+    // Parse body to JSON for handler convenience
+    req.body = JSON.parse((req as typeof req & { rawBody: string }).rawBody);
+    next();
+  }
+);
+
 // Body parsing
 app.use(express.json({ limit: '1mb' }));
 
@@ -42,6 +57,7 @@ app.get('/health', (_req, res) => {
 app.use('/auth', authRouter);
 app.use('/bots', botsRouter);
 app.use('/bots', chatRouter); // POST /bots/:botId/chat (public)
+app.use('/webhooks', webhooksRouter);
 
 // 404 fallback
 app.use((_req, res) => {

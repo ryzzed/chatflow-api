@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { SignJWT } from 'jose';
 import { prisma } from '../db';
 import { authLimiter } from '../middleware/rateLimiter';
+import { requireAuth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? '');
@@ -75,6 +76,21 @@ router.post('/login', authLimiter, async (req: Request, res: Response): Promise<
 
   const { password: _pw, ...safeUser } = user;
   res.json({ user: safeUser, token });
+});
+
+// GET /auth/me — returns the authenticated user's profile + plan
+router.get('/me', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.userId! },
+    select: { id: true, email: true, name: true, plan: true, createdAt: true },
+  });
+
+  if (!user) {
+    res.status(404).json({ error: 'User not found' });
+    return;
+  }
+
+  res.json({ user });
 });
 
 export default router;
