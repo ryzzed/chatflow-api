@@ -382,4 +382,33 @@ router.get('/:id/conversations', async (req: AuthRequest, res: Response): Promis
   res.json({ conversations });
 });
 
+// GET /bots/:id/conversations/:convId — full message thread for a single conversation
+router.get('/:id/conversations/:convId', async (req: AuthRequest, res: Response): Promise<void> => {
+  const bot = await prisma.bot.findFirst({
+    where: { id: req.params.id, userId: req.userId! },
+  });
+
+  if (!bot) {
+    res.status(404).json({ error: 'Bot not found' });
+    return;
+  }
+
+  const conversation = await prisma.conversation.findFirst({
+    where: { id: req.params.convId, botId: bot.id },
+    include: {
+      messages: {
+        orderBy: { createdAt: 'asc' },
+        select: { id: true, content: true, role: true, createdAt: true },
+      },
+    },
+  });
+
+  if (!conversation) {
+    res.status(404).json({ error: 'Conversation not found' });
+    return;
+  }
+
+  res.json({ conversation });
+});
+
 export default router;
