@@ -51,7 +51,7 @@ function planFromPaddle(priceId: string | undefined, productId: string | undefin
 // POST /webhooks/paddle
 // Raw body parsing is set up in index.ts; we attach rawBody there.
 // ---------------------------------------------------------------------------
-router.post('/', async (req: Request, res: Response): Promise<void> => {
+router.post('/paddle', async (req: Request, res: Response): Promise<void> => {
   const webhookSecret = process.env.PADDLE_WEBHOOK_SECRET;
   if (!webhookSecret) {
     console.error('PADDLE_WEBHOOK_SECRET not configured');
