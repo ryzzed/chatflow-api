@@ -200,10 +200,18 @@
 
     var payload = JSON.stringify({ message: text, sessionId: sessionId });
 
+    // Show a friendly message if the first response is slow (API cold start)
+    var slowTimer = setTimeout(function () {
+      if (typingEl.parentNode) {
+        typingEl.textContent = 'Still thinking… (waking up, hang on a moment)';
+      }
+    }, 8000);
+
     var xhr = new XMLHttpRequest();
     xhr.open('POST', apiBase + '/bots/' + botId + '/chat', true);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onload = function () {
+      clearTimeout(slowTimer);
       messagesEl.removeChild(typingEl);
       isSending = false;
       sendBtn.disabled = false;
@@ -230,6 +238,7 @@
       }
     };
     xhr.onerror = function () {
+      clearTimeout(slowTimer);
       messagesEl.removeChild(typingEl);
       isSending = false;
       sendBtn.disabled = false;
