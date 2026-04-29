@@ -2,7 +2,7 @@
 
 Backend API for ChatFlow — a self-serve AI chatbot platform for SMBs.
 
-**Stack:** Node.js 20 · Express · TypeScript · Prisma · Supabase (PostgreSQL) · JWT (jose)
+**Stack:** Node.js 20 · Express · TypeScript · Prisma · Supabase (PostgreSQL) · JWT (jose) · Groq llama-3.3-70b-versatile
 
 ---
 

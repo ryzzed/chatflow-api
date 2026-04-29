@@ -1,4 +1,5 @@
 import rateLimit from 'express-rate-limit';
+import { Request } from 'express';
 
 // General API rate limiter: 100 req / 15 min per IP
 export const apiLimiter = rateLimit({
@@ -16,4 +17,14 @@ export const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many auth attempts, please try again later.' },
+});
+
+// Chat endpoint limiter: 20 req / min per IP per botId
+export const chatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  keyGenerator: (req: Request) => `${req.ip ?? 'unknown'}:${req.params.botId ?? ''}`,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many chat requests, please slow down.' },
 });
