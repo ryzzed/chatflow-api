@@ -80,6 +80,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
         const customerId = data?.customer_id;
         const subscriptionId = data?.id;
         const productId = data?.items?.[0]?.price?.product_id;
+        const customerEmail = data?.customer?.email;
         const plan = planFromPaddleProductId(productId);
 
         if (!customerId) {
@@ -87,13 +88,20 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
           break;
         }
 
-        // Find user by Paddle customer ID
-        const user = await prisma.user.findFirst({
+        // Find user: first by Paddle customer ID (repeat subscriber),
+        // then by email (first-time checkout — paddleCustomerId not yet stored)
+        let user = await prisma.user.findFirst({
           where: { paddleCustomerId: customerId },
         });
 
+        if (!user && customerEmail) {
+          user = await prisma.user.findFirst({
+            where: { email: customerEmail },
+          });
+        }
+
         if (!user) {
-          console.warn(`Paddle webhook: no user found for customer ${customerId}`);
+          console.warn(`Paddle webhook: no user found for customer ${customerId} / ${customerEmail}`);
           break;
         }
 
@@ -101,6 +109,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
           where: { id: user.id },
           data: {
             plan: plan ?? user.plan,
+            paddleCustomerId: customerId,   // store on first purchase
             paddleSubscriptionId: subscriptionId,
           },
         });
